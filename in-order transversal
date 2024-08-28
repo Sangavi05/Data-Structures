@@ -21,7 +21,7 @@ void inOrderTraversal(Node* root) {
         printf("%d ", root->data);      
         inOrderTraversal(root->right);  
 }
-
+}
 void insertNode(Node** root, int data) {
     if (*root == NULL) {
         *root = createNode(data);
