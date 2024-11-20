@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int u, v, weight;
+} Edge;
+
+typedef struct {
+    int parent;
+    int rank;
+} Subset;
+
+int compareEdges(const void *a, const void *b) {
+    return ((Edge *)a)->weight - ((Edge *)b)->weight;
+}
+
+int find(Subset subsets[], int i) {
+    if (subsets[i].parent != i) {
+        subsets[i].parent = find(subsets, subsets[i].parent);
+    }
+    return subsets[i].parent;
+}
+
+void unionSets(Subset subsets[], int x, int y) {
+    int xroot = find(subsets, x);
+    int yroot = find(subsets, y);
+
+    if (subsets[xroot].rank < subsets[yroot].rank) {
+        subsets[xroot].parent = yroot;
+    } else if (subsets[xroot].rank > subsets[yroot].rank) {
+        subsets[yroot].parent = xroot;
+    } else {
+        subsets[yroot].parent = xroot;
+        subsets[xroot].rank++;
+    }
+}
+
+int kruskalMST(Edge edges[], int V, int E) {
+    qsort(edges, E, sizeof(edges[0]), compareEdges);
+
+    Subset *subsets = (Subset *)malloc(V * sizeof(Subset));
+    for (int v = 0; v < V; v++) {
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+
+    int mstWeight = 0;
+    int edgesCount = 0;
+
+    for (int i = 0; i < E; i++) {
+        int x = find(subsets, edges[i].u);
+        int y = find(subsets, edges[i].v);
+
+        if (x != y) {
+            mstWeight += edges[i].weight;
+            edgesCount++;
+            unionSets(subsets, x, y);
+            printf("Connecting city %d and city %d with cost %d\n", edges[i].u, edges[i].v, edges[i].weight);
+        }
+    }
+
+    free(subsets);
+    if (edgesCount != V - 1) {
+        printf("Not all cities can be connected.\n");
+        return -1;
+    }
+
+    return mstWeight;
+}
+
+int main() {
+    int V, E;
+
+    printf("Enter number of cities (vertices): ");
+    scanf("%d", &V);
+    printf("Enter number of connections (edges): ");
+    scanf("%d", &E);
+
+    Edge *edges = (Edge *)malloc(E * sizeof(Edge));
+
+    printf("Enter connections with costs (u, v, weight): \n");
+    for (int i = 0; i < E; i++) {
+        scanf("%d %d %d", &edges[i].u, &edges[i].v, &edges[i].weight);
+    }
+
+    int totalCost = kruskalMST(edges, V, E);
+    if (totalCost != -1) {
+        printf("Total cost to connect all cities: %d\n", totalCost);
+    }
+
+    free(edges);
+    return 0;
+}
