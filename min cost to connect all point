@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#define INF 99999999
+#define MAX 100
+
+typedef struct {
+    int x, y;
+} Point;
+
+// Function to calculate Euclidean distance between two points
+double calculateDistance(Point p1, Point p2) {
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+
+// Prim's algorithm to find Minimum Spanning Tree cost
+double prim(Point points[], int n) {
+    double totalCost = 0;
+    int selected[MAX] = {0}; // To track selected vertices
+    double minCost[MAX];      // Minimum cost to connect each point
+
+    for (int i = 0; i < n; i++) {
+        minCost[i] = INF; // Initialize all minCosts to infinity
+    }
+
+    // Start with the first point
+    minCost[0] = 0;
+
+    for (int count = 0; count < n - 1; count++) {
+        double min = INF;
+        int minIndex;
+
+        // Find the vertex with the minimum cost that is not already included in the MST
+        for (int v = 0; v < n; v++) {
+            if (!selected[v] && minCost[v] < min) {
+                min = minCost[v];
+                minIndex = v;
+            }
+        }
+
+        // Add this vertex to the MST
+        selected[minIndex] = 1;
+        totalCost += min;
+
+        // Update the minCost array
+        for (int v = 0; v < n; v++) {
+            if (!selected[v]) {
+                double distance = calculateDistance(points[minIndex], points[v]);
+                if (distance < minCost[v]) {
+                    minCost[v] = distance;
+                }
+            }
+        }
+    }
+
+    return totalCost;
+}
+
+int main() {
+    int n;
+    printf("Enter the number of points: ");
+    scanf("%d", &n);
+
+    Point points[MAX];
+    printf("Enter the coordinates of the points (x y):\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d %d", &points[i].x, &points[i].y);
+    }
+
+    double minCost = prim(points, n);
+    printf("Minimum cost to connect all points: %.2f\n", minCost);
+
+    return 0;
+}
