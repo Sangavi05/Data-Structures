@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int u, v, weight;
+} Edge;
+
+typedef struct {
+    int parent;
+    int rank;
+} Subset;
+
+// Function to compare two edges (for qsort)
+int compareEdges(const void* a, const void* b) {
+    return ((Edge*)a)->weight - ((Edge*)b)->weight;
+}
+
+// Function to find the set of an element
+int find(Subset subsets[], int i) {
+    if (subsets[i].parent != i)
+        subsets[i].parent = find(subsets, subsets[i].parent);
+    return subsets[i].parent;
+}
+
+// Function to unite two sets
+void unionSets(Subset subsets[], int x, int y) {
+    int xroot = find(subsets, x);
+    int yroot = find(subsets, y);
+
+    if (subsets[xroot].rank < subsets[yroot].rank)
+        subsets[xroot].parent = yroot;
+    else if (subsets[xroot].rank > subsets[yroot].rank)
+        subsets[yroot].parent = xroot;
+    else {
+        subsets[yroot].parent = xroot;
+        subsets[xroot].rank++;
+    }
+}
+
+// Function to find the weight of the Minimum Spanning Tree
+int kruskalMST(Edge edges[], int V, int E, int skipEdge, int includeEdge) {
+    Subset *subsets = malloc(V * sizeof(Subset));
+    for (int v = 0; v < V; v++) {
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+
+    int mstWeight = 0;
+    int edgesCount = 0;
+
+    // Include an edge if specified
+    if (includeEdge != -1) {
+        mstWeight += edges[includeEdge].weight;
+        edgesCount++;
+        unionSets(subsets, edges[includeEdge].u, edges[includeEdge].v);
+    }
+
+    // Go through edges and only include them if not skipping and they don't form a cycle
+    for (int i = 0; i < E; i++) {
+        if (i == skipEdge) continue; // Skip the specified edge
+        
+        int x = find(subsets, edges[i].u);
+        int y = find(subsets, edges[i].v);
+
+        if (x != y) {
+            mstWeight += edges[i].weight;
+            edgesCount++;
+            unionSets(subsets, x, y);
+        }
+    }
+
+    free(subsets);
+    
+    // If we have included exactly V-1 edges, return the MST weight
+    return edgesCount == V - 1 ? mstWeight : -1; // Return -1 if MST not possible
+}
+
+// Function to find critical and pseudo-critical edges
+void findCriticalAndPseudoCriticalEdges(int V, int E, Edge edges[]) {
+    // Sort edges based on their weights
+    qsort(edges, E, sizeof(edges[0]), compareEdges);
+    
+    // Calculate the weight of the MST with all edges
+    int totalMSTWeight = kruskalMST(edges, V, E, -1, -1);
+
+    for (int i = 0; i < E; i++) {
+        // Test if this edge is critical
+        int weightWithoutEdge = kruskalMST(edges, V, E, i, -1);
+        if (weightWithoutEdge > totalMSTWeight || weightWithoutEdge == -1) {
+            printf("Edge (%d, %d) is a critical edge.\n", edges[i].u, edges[i].v);
+        } else {
+            // Test if this edge is pseudo-critical
+            int weightWithEdge = kruskalMST(edges, V, E, -1, i);
+            if (weightWithEdge == totalMSTWeight) {
+                printf("Edge (%d, %d) is a pseudo-critical edge.\n", edges[i].u, edges[i].v);
+            }
+        }
+    }
+}
+
+int main() {
+    int V = 5; // Number of vertices
+    int E = 7; // Number of edges
+    Edge edges[] = {
+        {0, 1, 10},
+        {0, 2, 6},
+        {0, 3, 5},
+        {1, 3, 15},
+        {2, 3, 4},
+        {1, 2, 2},
+        {2, 4, 3}
+    };
+
+    findCriticalAndPseudoCriticalEdges(V, E, edges);
+
+    return 0;
+}
