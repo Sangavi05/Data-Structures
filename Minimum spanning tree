@@ -1,0 +1,96 @@
+typedef struct Edge{
+	int nodes[2];
+	int weight;
+} Edge;
+
+static int cmp_Edge_weightAsc(const Edge * const pThis, const Edge * const pBase){
+	return pThis->weight - pBase->weight;
+}
+
+int minCostConnectPoints(
+	const int * const * const points,
+	const int pointsLen,
+	const int * const pointLens
+){
+	(void)pointLens;
+
+	if (1 == pointsLen){
+		return 0;
+	}
+
+	int adjacency[pointsLen][pointsLen];
+	for (int i = 0; i < pointsLen; i += 1){
+		adjacency[i][i] = 0;
+	}
+	for (int i = 0; i < pointsLen; i += 1){
+		for (int j = i + 1; j < pointsLen; j += 1){
+			const int weight = abs(points[i][0] - points[j][0]) +
+				abs(points[i][1] - points[j][1]);
+
+			adjacency[i][j] = weight;
+			adjacency[j][i] = weight;
+		}
+	}
+
+	int minWeightSum = 0;
+
+	Heap_Result heapResult;
+
+	Heap * pHeap;
+	heapResult = Heap_create(
+		&pHeap,
+		Heap_HeapType_ASC,
+		( 1 + (pointsLen - 1) ) * (pointsLen - 1) / 2,
+		sizeof (Edge),
+		&cmp_Edge_weightAsc
+	);
+	assert(Heap_Result_SUCCESS == heapResult);
+
+	bool vertexInUses[pointsLen];
+	memset( &vertexInUses, 0, sizeof (vertexInUses) );
+	int vertexInUseCnt = 0;
+
+	vertexInUses[0] = true;
+	vertexInUseCnt += 1;
+	for (int i = 1; i < pointsLen; i += 1){
+		const Edge edge = { {0, i}, adjacency[0][i] };
+		heapResult = Heap_push(pHeap, &edge);
+		assert(Heap_Result_SUCCESS == heapResult);
+	}
+
+	while (1){
+		Edge edge;
+		heapResult = Heap_pull(pHeap, &edge);
+		assert(Heap_Result_SUCCESS == heapResult);
+
+		if (vertexInUses[ edge.nodes[0] ] && vertexInUses[ edge.nodes[1] ]){
+			continue;
+		}
+
+		minWeightSum += edge.weight;
+
+		const int newVertex = (!vertexInUses[ edge.nodes[0] ])? edge.nodes[0] : edge.nodes[1];
+
+		vertexInUses[newVertex] = true;
+		vertexInUseCnt += 1;
+
+		if (vertexInUseCnt == pointsLen){
+			break;
+		}
+
+		for (int i = 0; i < pointsLen; i += 1){
+			if (vertexInUses[i]){
+				continue;
+			}
+
+			const Edge edge = { {newVertex, i}, adjacency[newVertex][i] };
+			heapResult = Heap_push(pHeap, &edge);
+			assert(Heap_Result_SUCCESS == heapResult);
+		}
+	}
+
+	Heap_destroy(pHeap);
+	pHeap = NULL;
+
+	return minWeightSum;
+}
